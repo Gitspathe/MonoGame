@@ -54,6 +54,8 @@ namespace Microsoft.Xna.Framework
             get; private set;
         }
 
+        internal bool Headless = false;
+
         private bool _isActive;
         public bool IsActive
         {

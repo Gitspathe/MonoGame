@@ -60,12 +60,14 @@ namespace Microsoft.Xna.Framework
         private bool _shouldExit;
         private bool _suppressDraw;
 
+        public bool KeepWindowOnDipose { get; set; }
+
         partial void PlatformConstruct();
 
         /// <summary>
         /// Create a <see cref="Game"/>.
         /// </summary>
-        public Game()
+        public Game(Game existingGame = null)
         {
             _instance = this;
 
@@ -74,7 +76,14 @@ namespace Microsoft.Xna.Framework
             _components = new GameComponentCollection();
             _content = new ContentManager(_services);
 
-            Platform = GamePlatform.PlatformCreate(this);
+            if (existingGame != null) {
+                existingGame.Platform.Exit();
+                existingGame._services.RemoveService(typeof(GamePlatform));
+                Platform = GamePlatform.PlatformCreate(this, existingGame.Window);
+            } else {
+                Platform = GamePlatform.PlatformCreate(this);
+            }
+
             Platform.Activated += OnActivated;
             Platform.Deactivated += OnDeactivated;
             _services.AddService(typeof(GamePlatform), Platform);
@@ -129,20 +138,22 @@ namespace Microsoft.Xna.Framework
                         _content = null;
                     }
 
-                    if (_graphicsDeviceManager != null)
+                    if (!KeepWindowOnDipose)
                     {
-                        (_graphicsDeviceManager as GraphicsDeviceManager).Dispose();
-                        _graphicsDeviceManager = null;
-                    }
+                        if (_graphicsDeviceManager != null)
+                        {
+                            (_graphicsDeviceManager as GraphicsDeviceManager).Dispose();
+                            _graphicsDeviceManager = null;
+                        }
+                        if (Platform != null)
+                        {
+                            Platform.Activated -= OnActivated;
+                            Platform.Deactivated -= OnDeactivated;
+                            _services.RemoveService(typeof(GamePlatform));
 
-                    if (Platform != null)
-                    {
-                        Platform.Activated -= OnActivated;
-                        Platform.Deactivated -= OnDeactivated;
-                        _services.RemoveService(typeof(GamePlatform));
-
-                        Platform.Dispose();
-                        Platform = null;
+                            Platform.Dispose();
+                            Platform = null;
+                        }
                     }
 
                     ContentTypeReaderManager.ClearTypeCreators();
@@ -184,6 +195,17 @@ namespace Microsoft.Xna.Framework
         /// The start up parameters for this <see cref="Game"/>.
         /// </summary>
         public LaunchParameters LaunchParameters { get; private set; }
+
+        public void SetHeadless(bool value)
+        {
+            Platform.Headless = value;
+        }
+
+        public void Focus()
+        {
+            Sdl.Window.Raise(Window.Handle);
+            Platform.IsActive = true;
+        }
 
         /// <summary>
         /// A collection of game components attached to this <see cref="Game"/>.
@@ -264,7 +286,7 @@ namespace Microsoft.Xna.Framework
                 }
             }
         }
-
+        
 
         /// <summary>
         /// Indicates if this game is running with a fixed time between frames.
@@ -285,7 +307,7 @@ namespace Microsoft.Xna.Framework
             get { return _services; }
         }
 
-
+        
         /// <summary>
         /// The <see cref="ContentManager"/> of this <see cref="Game"/>.
         /// </summary>
@@ -715,7 +737,7 @@ namespace Microsoft.Xna.Framework
         protected virtual void Update(GameTime gameTime)
         {
             _updateables.ForEachFilteredItem(UpdateAction, gameTime);
-		}
+        }
 
         /// <summary>
         /// Called when the game is exiting. Raises the <see cref="Exiting"/> event.
@@ -732,22 +754,22 @@ namespace Microsoft.Xna.Framework
         /// </summary>
         /// <param name="sender">This <see cref="Game"/>.</param>
         /// <param name="args">The arguments to the <see cref="Activated"/> event.</param>
-		protected virtual void OnActivated (object sender, EventArgs args)
-		{
-			AssertNotDisposed();
+        protected virtual void OnActivated (object sender, EventArgs args)
+        {
+            AssertNotDisposed();
             EventHelpers.Raise(sender, Activated, args);
-		}
+        }
 		
         /// <summary>
         /// Called when the game loses focus. Raises the <see cref="Deactivated"/> event.
         /// </summary>
         /// <param name="sender">This <see cref="Game"/>.</param>
         /// <param name="args">The arguments to the <see cref="Deactivated"/> event.</param>
-		protected virtual void OnDeactivated (object sender, EventArgs args)
-		{
-			AssertNotDisposed();
+        protected virtual void OnDeactivated (object sender, EventArgs args)
+        {
+            AssertNotDisposed();
             EventHelpers.Raise(sender, Deactivated, args);
-		}
+        }
 
         #endregion Protected Methods
 
@@ -804,7 +826,7 @@ namespace Microsoft.Xna.Framework
         }
 #endif
 
-        internal void DoUpdate(GameTime gameTime)
+        public void DoUpdate(GameTime gameTime)
         {
             AssertNotDisposed();
             if (Platform.BeforeUpdate(gameTime))
@@ -818,7 +840,7 @@ namespace Microsoft.Xna.Framework
             }
         }
 
-        internal void DoDraw(GameTime gameTime)
+        public void DoDraw(GameTime gameTime)
         {
             AssertNotDisposed();
             // Draw and EndDraw should not be called if BeginDraw returns false.
@@ -831,9 +853,15 @@ namespace Microsoft.Xna.Framework
             }
         }
 
-        internal void DoInitialize()
+        public void DoInitialize()
         {
             AssertNotDisposed();
+
+            if (Platform.Headless) {
+                Initialize();
+                return;
+            }
+
             if (GraphicsDevice == null && graphicsDeviceManager != null)
                 _graphicsDeviceManager.CreateDevice();
 

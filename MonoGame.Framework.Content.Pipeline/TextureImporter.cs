@@ -194,6 +194,7 @@ namespace Microsoft.Xna.Framework.Content.Pipeline
         // structures, which FreeImage does not support.
         TextureContent LoadImage(string filename)
         {
+            byte[] data = null;
             var output = new Texture2DContent { Identity = new ContentIdentity(filename) };
 
             ImageResult result;

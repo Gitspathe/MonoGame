@@ -330,6 +330,10 @@ internal static class Sdl
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void d_sdl_raisewindow(IntPtr window);
+        public static d_sdl_raisewindow Raise = FuncLoader.LoadFunction<d_sdl_raisewindow>(NativeLibrary, "SDL_RaiseWindow");
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate IntPtr d_sdl_createwindow(string title, int x, int y, int w, int h, int flags);
         private static d_sdl_createwindow SDL_CreateWindow = FuncLoader.LoadFunction<d_sdl_createwindow>(NativeLibrary, "SDL_CreateWindow");
 

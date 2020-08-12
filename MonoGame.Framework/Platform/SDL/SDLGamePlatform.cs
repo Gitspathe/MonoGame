@@ -20,13 +20,13 @@ namespace Microsoft.Xna.Framework
             get { return GameRunBehavior.Synchronous; }
         }
 
-        private readonly Game _game;
-        private readonly List<Keys> _keys;
+        private static Game _game;
+        private static List<Keys> _keys;
 
         private int _isExiting;
         private SdlGameWindow _view;
 
-        public SdlGamePlatform(Game game)
+        public SdlGamePlatform(Game game, GameWindow window = null)
             : base(game)
         {
             _game = game;
@@ -59,7 +59,13 @@ namespace Microsoft.Xna.Framework
             Sdl.DisableScreenSaver();
 
             GamePad.InitDatabase();
-            Window = _view = new SdlGameWindow(_game);
+            if(window == null)
+                Window = _view = new SdlGameWindow(_game);
+            else {
+                Sdl.Window.Raise(window.Handle);
+                Window = window;
+                _view = (SdlGameWindow) window;
+            }
         }
 
         public override void BeforeInitialize()
@@ -84,7 +90,10 @@ namespace Microsoft.Xna.Framework
 
         public override void RunLoop()
         {
-            Sdl.Window.Show(Window.Handle);
+            if (!Headless)
+            {
+                Sdl.Window.Show(Window.Handle);
+            }
 
             while (true)
             {
@@ -206,12 +215,6 @@ namespace Microsoft.Xna.Framework
                         }
                         break;
                     case Sdl.EventType.WindowEvent:
-
-                        // If the ID is not the same as our main window ID
-                        // that means that we received an event from the
-                        // dummy window, so don't process the event.
-                        if (ev.Window.WindowID != _view.Id)
-                            break;
 
                         switch (ev.Window.EventID)
                         {

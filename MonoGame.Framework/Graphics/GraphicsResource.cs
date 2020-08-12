@@ -40,11 +40,14 @@
 
 using System;
 using System.Diagnostics;
+using Microsoft.Xna.Framework.Content;
 
 namespace Microsoft.Xna.Framework.Graphics
 {
     public abstract class GraphicsResource : IDisposable
     {
+        public ContentManager ContentManager { get; internal set; }
+
         bool disposed;
 
         // The GraphicsDevice property should only be accessed in Dispose(bool) if the disposing
@@ -54,9 +57,9 @@ namespace Microsoft.Xna.Framework.Graphics
 
         private WeakReference _selfReference;
 
-        internal GraphicsResource()
+        internal GraphicsResource(ContentManager contentManager = null)
         {
-            
+            ContentManager = contentManager;
         }
 
         ~GraphicsResource()
