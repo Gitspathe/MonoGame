@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace Microsoft.Xna.Framework.Graphics
 {
     [DebuggerDisplay("{DebugDisplayString}")]
-	public class EffectParameter
+	public partial class EffectParameter
 	{
         /// <summary>
         /// The next state key used when an effect parameter
