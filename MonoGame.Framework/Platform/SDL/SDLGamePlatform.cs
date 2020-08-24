@@ -220,7 +220,8 @@ namespace Microsoft.Xna.Framework
                         {
                             case Sdl.Window.EventId.Resized:
                             case Sdl.Window.EventId.SizeChanged:
-                                _view.ClientResize(ev.Window.Data1, ev.Window.Data2);
+                                if(!Headless)
+                                    _view.ClientResize(ev.Window.Data1, ev.Window.Data2);
                                 break;
                             case Sdl.Window.EventId.FocusGained:
                                 IsActive = true;
@@ -229,7 +230,8 @@ namespace Microsoft.Xna.Framework
                                 IsActive = false;
                                 break;
                             case Sdl.Window.EventId.Moved:
-                                _view.Moved();
+                                if (!Headless)
+                                    _view.Moved();
                                 break;
                             case Sdl.Window.EventId.Close:
                                 _isExiting++;
