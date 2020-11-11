@@ -379,6 +379,96 @@ namespace Microsoft.Xna.Framework.Graphics
         }
 
         /// <summary>
+        /// Submit a sprite for drawing in the current batch, using System.Numerics for the Vectors.
+        /// </summary>
+        /// <param name="texture">A texture.</param>
+        /// <param name="position">The drawing location on screen.</param>
+        /// <param name="sourceRectangle">An optional region on the texture which will be rendered. If null - draws full texture.</param>
+        /// <param name="color">A color mask.</param>
+        /// <param name="rotation">A rotation of this sprite.</param>
+        /// <param name="origin">Center of the rotation. 0,0 by default.</param>
+        /// <param name="scale">A scaling of this sprite.</param>
+        /// <param name="effects">Modificators for drawing. Can be combined.</param>
+        /// <param name="layerDepth">A depth of the layer of this sprite.</param>
+        public void Draw(Texture2D texture,
+                System.Numerics.Vector3 position,
+                Rectangle sourceRectangle,
+                Color color,
+                float rotation,
+                System.Numerics.Vector2 origin,
+                System.Numerics.Vector3 scale,
+                float layerDepth)
+        {
+            if (texture == null)
+                throw new ArgumentNullException("texture");
+            if (!_beginCalled)
+                throw new InvalidOperationException("Draw was called, but Begin has not yet been called. Begin must be called successfully before you can call Draw.");
+
+            var item = _batcher.CreateBatchItem();
+            item.Texture = texture;
+
+            // set SortKey based on SpriteSortMode.
+            switch (_sortMode) {
+                // Comparison of Texture objects.
+                case SpriteSortMode.Texture:
+                    item.SortKey = texture.SortingKey;
+                    break;
+                // Comparison of Depth
+                case SpriteSortMode.FrontToBack:
+                    item.SortKey = layerDepth;
+                    break;
+                // Comparison of Depth in reverse
+                case SpriteSortMode.BackToFront:
+                    item.SortKey = -layerDepth;
+                    break;
+                case SpriteSortMode.Immediate:
+                    throw new Exception("Immediate sorting mode isn't support with this spriteBatch overload.");
+            }
+
+            origin = origin * new System.Numerics.Vector2(scale.X, scale.Y);
+
+            float w, h;
+
+            var srcRect = sourceRectangle;
+            w = srcRect.Width * scale.X;
+            h = srcRect.Height * scale.Y;
+            _texCoordTL.X = srcRect.X * texture.TexelWidth;
+            _texCoordTL.Y = srcRect.Y * texture.TexelHeight;
+            _texCoordBR.X = (srcRect.X + srcRect.Width) * texture.TexelWidth;
+            _texCoordBR.Y = (srcRect.Y + srcRect.Height) * texture.TexelHeight;
+
+
+            if (rotation == 0f) {
+                item.Set(position.X - origin.X,
+                    position.Y - origin.Y,
+                    w,
+                    h,
+                    color,
+                    _texCoordTL,
+                    _texCoordBR,
+                    layerDepth);
+            } else {
+                item.Set(position.X,
+                    position.Y,
+                    -origin.X,
+                    -origin.Y,
+                    w,
+                    h,
+#if NETSTANDARD2_1
+                    MathF.Sin(rotation),
+                    MathF.Cos(rotation),
+#else
+                    (float)MathF.Sin(rotation),
+                    (float)MathF.Cos(rotation),
+#endif
+                    color,
+                    _texCoordTL,
+                    _texCoordBR,
+                    layerDepth);
+            }
+        }
+
+        /// <summary>
         /// Submit a sprite for drawing in the current batch.
         /// </summary>
         /// <param name="texture">A texture.</param>
